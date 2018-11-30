@@ -1,0 +1,23 @@
+---
+title: "Data Wrangling"
+author: "KO"
+date: "11/29/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r cars}
+library(readr)
+# TODO: remove the WILL specific components of the file directory
+data <- read_delim('revent.TXT', delim = ";")
+head(data)
+
+data <- data %>%
+ select('Player Name', 'Event Name', )
+```
+
