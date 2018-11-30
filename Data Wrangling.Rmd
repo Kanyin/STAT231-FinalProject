@@ -15,52 +15,53 @@ knitr::opts_chunk$set(echo = TRUE)
 library(readr)
 library(dplyr)
 data <- read_delim('revent.TXT', delim = ";")
-head(data)
+#head(data)
 
 dataFinal <- data %>%
   
-  #Changing variables to the proper types
+  # Filtering for PGA TOUR Stroke Play Events
   
-  mutate('Total Rounds' = as.numeric('Total Rounds'),
-         'Finish Position(numeric)' = as.numeric('Finish Position(numeric)'),
-         'Birdies' = as.numeric('Birdies'),
-         'Total Holes Over Par' = as.numeric('Total Holes Over Par'),
-         'Drives Over 300 Yards (# of Drives)' = as.numeric('Drives Over 300 Yards (# of Drives)'),
-         '3-Putt Avoid(Total 3 Putts)' = as.numeric('3-Putt Avoid(Total 3 Putts)'),
-         'Avg Distance of Putts Made(Total Distance of Putts)' = as.numeric('Avg Distance of Putts Made(Total Distance of Putts)'),
-         'Total Holes Played' = as.numeric('Total Holes Played'),
-         'Total Greens in Regulation' = as.numeric('Total Greens in Regulation'),
-         'App. 50-125 Yards(ft)' = as.numeric('App. 50-125 Yards(ft)'),
-         'App.  50-125 Yards(attempts)' = as.numeric('App.  50-125 Yards(attempts)'),
-         'Total Distance(ft) Prox to Hole' = as.numeric('Total Distance(ft) Prox to Hole'),
+  filter(`Official Event(Y/N)` == "Y") %>%
+  
+  # Changing variables to the proper types
+  
+  mutate(`Total Rounds` = as.numeric(`Total Rounds)`),
+         `Finish Position(numeric)` = as.numeric(`Finish Position(numeric)`),
+         `Birdies` = as.numeric(`Birdies`),
+         `Total Holes Over Par` = as.numeric(`Total Holes Over Par`),
+         `Drives Over 300 Yards (# of Drives)` = as.numeric(`Drives Over 300 Yards (# of Drives)`),
+         `3-Putt Avoid(Total 3 Putts)` = as.numeric(`3-Putt Avoid(Total 3 Putts)`),
+         `Avg Distance of Putts Made(Total Distance of Putts)` = as.numeric(`Avg Distance of Putts Made(Total Distance of Putts)`),
+         `Total Holes Played` = as.numeric(`Total Holes Played`),
+         `Total Greens in Regulation` = as.numeric(`Total Greens in Regulation`),
+         `App. 50-125 Yards(ft)` = as.numeric(`App. 50-125 Yards(ft)`),
+         `App.  50-125 Yards(attempts)` = as.numeric(`App.  50-125 Yards(attempts)`),
          
          #Creating our desired variables
          
-         'Cut Made' = ifelse('Finish Position(numeric)' < 999, 1, 0),
-         'Birdies Per Round' = 'Birdies' / 'Total Rounds',
-                  'GIRs Per Round' = 'Total Greens in Regulation' / 'Total Holes Played',
-         'Over Par Holes Per Round' = 'Total Holes Over Par' / 'Total Rounds',
-         '3-Putts Per Round' = '3-Putt Avoid(Total 3 Putts)' / 'Total Rounds',
-         '300-Yard Drives Per Round' = 'Drives Over 300 Yards (# of Drives)' /
-           'Total Rounds',
-         'Dist. of Putts Made Per Round' = 'Avg Distance of Putts Made(Total Distance of Putts)' / 'Total Rounds',
-         'Avg. Proximity to Hole (All)' = 'Total Distance(ft) Prox to Hole' / 'Total Holes Played',
-         'Avg. Prox to Hole (50-125)' = 'App. 50-125 Yards(ft)' / 'App.  50-125 Yards(attempts)') %>%
+         `Cut Made` = as.factor(ifelse(`Finish Position(numeric)` < 999, 1, 0)),
+         `Birdies Per Round` = `Birdies` / `Total Rounds`,
+         `GIRs Per Round` = `Total Greens in Regulation` / `Total Holes Played`,
+         `Over Par Holes Per Round` = `Total Holes Over Par` / `Total Rounds`,
+         `3-Putts Per Round` = `3-Putt Avoid(Total 3 Putts)` / `Total Rounds`,
+         `300-Yard Drives Per Round` = `Drives Over 300 Yards (# of Drives)` /
+           `Total Rounds`,
+         `Dist. of Putts Made Per Round` = `Avg Distance of Putts Made(Total Distance of Putts)` / `Total Rounds`,
+         `Avg. Prox to Hole (50-125)` = `App. 50-125 Yards(ft)` / `App.  50-125 Yards(attempts)`)  %>%
 
   #Selecting our desired columns
   
-  select('Player Name',
-        'Event Name',
-        'Cut Made',
-        'Birdies Per Round',
-        'GIRs Per Round',
-        'Over Par Holes Per Round',
-        '3-Putts Per Round',
-        '300-Yard Drives Per Round',
-        'Dist. of Putts Made Per Round',
-        'Avg. Proximity to Hole (All)',
-        'Avg. Prox to Hole (50-125)')
+  select(`Player Name`,
+        `Event Name`,
+        `Cut Made`,
+        `Birdies Per Round`,
+        `GIRs Per Round`,
+        `Over Par Holes Per Round`,
+        `3-Putts Per Round`,
+        `300-Yard Drives Per Round`,
+        `Dist. of Putts Made Per Round`,
+        `Avg. Prox to Hole (50-125)`)
 
 head(dataFinal)
+View(dataFinal)
 ```
-
