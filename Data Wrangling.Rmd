@@ -63,6 +63,9 @@ dataFinal <- data %>%
         distPuttsMadePerRound,
         proxToHoleApproach)
 
+# https://stackoverflow.com/questions/4862178/remove-rows-with-all-or-some-nas-missing-values-in-data-frame 
+dataFinal <- dataFinal[complete.cases(dataFinal), ]
+
 head(dataFinal)
 #View(dataFinal)
 ```
@@ -97,8 +100,24 @@ library(nnet)
 
 f <- as.formula(cutMade ~ birdiesPerRound + GIRsPerRound + overParHolesPerRound + ThreePuttsPerRound)
 
+train <- train %>%
+  mutate(cutMade = as.integer(cutMade))
+
 neuralNetwork <- nnet(f, data=train, size=3)
 ```
+
+```{r}
+# load library
+library(neuralnet)
+
+# fit neural network
+set.seed(2)
+NN <- neuralnet(f, train, hidden = 1, linear.output = T)
+
+# plot neural network
+plot(NN)
+```
+
 
 ```{r}
 # predict on test and evaluate the model on test using auc-----------------------
