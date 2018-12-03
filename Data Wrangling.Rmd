@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r warning=FALSE, message=FALSE}
 library(readr)
 library(dplyr)
+
 data <- read_delim('revent.TXT', delim = ";")
 #head(data)
 
@@ -39,29 +40,263 @@ dataFinal <- data %>%
          
          #Creating our desired variables
          
-         `Cut Made` = as.factor(ifelse(`Finish Position(numeric)` < 999, 1, 0)),
-         `Birdies Per Round` = `Birdies` / `Total Rounds`,
-         `GIRs Per Round` = `Total Greens in Regulation` / `Total Holes Played`,
-         `Over Par Holes Per Round` = `Total Holes Over Par` / `Total Rounds`,
-         `3-Putts Per Round` = `3-Putt Avoid(Total 3 Putts)` / `Total Rounds`,
-         `300-Yard Drives Per Round` = `Drives Over 300 Yards (# of Drives)` /
+         cutMade = as.factor(ifelse(`Finish Position(numeric)` < 999, 1, 0)),
+         birdiesPerRound = `Birdies` / `Total Rounds`,
+         GIRsPerRound = `Total Greens in Regulation` / `Total Holes Played`,
+         overParHolesPerRound = `Total Holes Over Par` / `Total Rounds`,
+         ThreePuttsPerRound = `3-Putt Avoid(Total 3 Putts)` / `Total Rounds`,
+         over300DrivesPerRound = `Drives Over 300 Yards (# of Drives)` /
            `Total Rounds`,
-         `Dist. of Putts Made Per Round` = `Avg Distance of Putts Made(Total Distance of Putts)` / `Total Rounds`,
-         `Avg. Prox to Hole (50-125)` = `App. 50-125 Yards(ft)` / `App.  50-125 Yards(attempts)`)  %>%
+         distPuttsMadePerRound = `Avg Distance of Putts Made(Total Distance of Putts)` / `Total Rounds`,
+         proxToHoleApproach = `App. 50-125 Yards(ft)` / `App.  50-125 Yards(attempts)`)  %>%
 
   #Selecting our desired columns
   
   select(`Player Name`,
         `Event Name`,
-        `Cut Made`,
-        `Birdies Per Round`,
-        `GIRs Per Round`,
-        `Over Par Holes Per Round`,
-        `3-Putts Per Round`,
-        `300-Yard Drives Per Round`,
-        `Dist. of Putts Made Per Round`,
-        `Avg. Prox to Hole (50-125)`)
+        cutMade,
+        birdiesPerRound,
+        GIRsPerRound,
+        overParHolesPerRound,
+        ThreePuttsPerRound,
+        over300DrivesPerRound,
+        distPuttsMadePerRound,
+        proxToHoleApproach)
 
 head(dataFinal)
-View(dataFinal)
+#View(dataFinal)
+```
+
+```{r}
+library(rpart)
+library(partykit)
+
+# Scale numeric data between 0 and 1
+scale_0_1 <- function(x) {
+  #' param x a numeric column that will be scaled 
+  rng <- range(x, na.rm = TRUE)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+
+scaledData <- data.frame(lapply(dataFinal, FUN=function(x) if (is.numeric(x)) scale_0_1(x) else x))
+
+##############
+# split 80/20 --------------------------
+set.seed(123)
+
+n <- nrow(scaledData)
+train_id <- sample(1:n, size=round(n*0.8)) # select approx 80% of the row numbers between 1 and n
+train <- scaledData[train_id,] # the data set we'll train the model on
+test <- scaledData[-train_id,] # the data set we'll test the model on
+
+head(train)
+head(test)
+
+# train a nueral network classifier using the same train data as above.
+library(nnet)
+
+f <- as.formula(cutMade ~ birdiesPerRound + GIRsPerRound + overParHolesPerRound + ThreePuttsPerRound)
+
+neuralNetwork <- nnet(f, data=train, size=3)
+```
+
+```{r}
+# predict on test and evaluate the model on test using auc-----------------------
+library(pROC)
+pred <- predict(neuralNetwork, test, type = "raw")[,1] # a vector of probabilities
+test <- test %>% mutate(prediction = pred)
+
+roc_obj <- roc(test$cutMade, test$prediction)
+auc(roc_obj)
+plot(roc_obj)
+#summary(roc_obj)
+```
+
+```{r}
+# predict on test and evaluate the model on test using auc-----------------------
+library(pROC)
+pred <- predict(neuralNetwork, test)[,2] # a vector of probabilities
+test <- test %>% mutate(prediction = pred)
+
+roc_obj <- roc(test$Survived, test$prediction)
+auc(roc_obj)
+plot(roc_obj)
+
+# question: would we get the same AUC with a different seed? NO. Because we would have a different train set.
+# question: can we calculate a confusion matrix right now?
+
+####################
+# end tree example
+#####################
+
+######################
+# begin investigating other classifiers
+######################
+
+# train a random forest classifier using the same train data as above.
+library(randomForest)
+?randomForest
+
+
+# train a naive bayes classifier using the same train data as above.
+library(e1071)
+?naiveBayes
+
+
+
+
+
+
+#####################
+# But what is AUC...?
+#####################
+# Once you have some predictions on your test set,
+# you need to evaluate the quality of the predictions.
+# The area under the ROC curve (AUC) is a common evaluation metric for classifiers.
+
+# Let's first start by looking at a simple metric: accuracy. We'll see it's often not ideal to evaluate a classifier.
+# In order to calculate accuracy, true positive rate, true negative rate, etc.,
+# we need to pick a threshold.
+# Above the threshold we'll predict 1, below we'll predict 0
+
+# threshold = 0.5 ---------------------------------------------------------------------
+head(test) %>% select(Survived, prediction)
+threshold <- .5
+
+test <- test %>% mutate(prediction.5 = ifelse(prediction > threshold , 1, 0))
+head(test) %>% select(Survived, prediction, prediction.5)
+
+# look at the confusion matrix
+mosaic::tally(prediction.5 ~ Survived, data=test) # doesn't look great
+TPR.5 <- 42/(42+15) # True Negative Rate aka Sensitivity
+TNR.5 <- 94/(94+9) # True Positive Rate aka Specificity
+
+
+# but if we chose a different threshold, the prediction would change and so would the FPR, TPR
+# threshold = 0.8 --------------------------------------------------------------------
+threshold <- 0.8
+
+test <- test %>% mutate(prediction.8 = ifelse(prediction > threshold , 1, 0))
+head(test) %>% select(Survived, prediction, prediction.8)
+
+# look at the confusion matrix
+mosaic::tally(prediction.8 ~ Survived, data=test) # doesn't look great
+TPR.8 <- 33/(33+24) # True Positive Rate aka Sensitivity
+TNR.8 <- 101/(101+2) # True Negative Rate aka Specificity
+
+
+# AUC = .833 ---------------------------------------------------------
+# AUC is the area under the reciever operating curve.
+# The ROC calculates TPR, FPR for all potential thresholds.
+# Each point represents the RPF, FPR of a single threshold.
+# AUC measures the quality of predictions without considering a thershold.
+roc_obj <- roc(test$Survived, test$prediction)
+plot(roc_obj)
+auc(roc_obj)
+summary(roc_obj)
+
+# let's add the TPR and TNR corresponding to threshold of .5 and .8.
+sensitivities <- c(TPR.5, TPR.8)
+specificities <- c(TNR.5, TNR.8)
+points(specificities, sensitivities, col = 'red', cex = 2)
+
+######################
+# end AUC
+#####################
+
+######################
+# begin random forest investigation
+######################
+# repeat the tree example with a random forest classifier.
+
+
+#####################
+# end random forest investigation
+#####################
+
+######################
+# begin naive bayes investigation
+######################
+# repeat the tree example with a naive bayes classifier.
+
+
+#####################
+# end naive bayes investigation
+#####################
+
+######################
+# Begin best classifier investigation
+# You will submit your best prediction
+######################
+
+# split 80/20 --------------------------
+set.seed(25)
+n <- nrow(titanic)
+train_id <- sample(1:n, size=round(n*0.8)) # select approx 80% of the row numbers between 1 and n
+train <- titanic[train_id,] # the data set we'll train the model on
+test <- titanic[-train_id,] # the data set we'll test the model on
+View(titanic)
+
+# train your model ---------------------
+tree <- rpart(Survived ~ Fare + Sex, data=train)
+plot(as.party(tree))
+tree
+
+nn <- nnet(Survived ~ Fare + Sex, data=train, size=3)
+plot((nn))
+
+nn
+# predict on test and evaluate the model on test using auc-----------------------
+pred_me <- predict(nn, test, type = "raw")[,1] # a vector of probabilities
+test_me <- test %>% mutate(prediction = pred)
+
+roc_obj_me <- roc(test_me$Survived, test_me$prediction)
+auc(roc_obj_me)
+plot(roc_obj_me)
+
+
+# predict on a TRUE hold out set ------------------------
+# To complete this investigation slack the following to Alex
+# 1. your test set AUC
+# 2. the csv of predictions from the hold out (described below)
+
+last_names <- 'lonnquist_cho' #change this
+
+# predict on this new hold out
+hold_out <- read.csv('https://abaldenko.github.io/STAT231-Fall2018/notes/data/titanic_hold_out_class.csv')
+prediction <- predict(nn, hold_out)
+
+# result should be a single column dataframe with column name prediction
+result <- data.frame(prediction)
+prediction
+# prediction
+# .0028
+# .0111
+# .9222
+# .0888
+
+# write the result to disk
+file_name <- paste0(last_names, '_prediction.csv', row.names=F)
+write.csv(result, file_name)
+
+#####################
+# End best classifier investigation
+#####################
+
+
+
+################
+# what does cp control in the tree classifier?
+################
+# the complexity parameter is a threshole
+# that controls whether or not a split is made.
+# a small cp is a small threshold, which means
+# there will be lots of splits.
+tree <- rpart(Survived ~ Fare, data=titanic)
+pruned_tree <- prune(tree, cp=.05)
+plot(as.party(pruned_tree))
+
+tree <- rpart(Survived ~ Fare, data=titanic)
+pruned_tree <- prune(tree, cp=.0005)
+plot(as.party(pruned_tree))
 ```
