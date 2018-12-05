@@ -2,7 +2,9 @@
 title: "Data Wrangling"
 author: "KO"
 date: "11/29/2018"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -16,7 +18,10 @@ library(readr)
 library(dplyr)
 
 data <- read_delim('revent.TXT', delim = ";")
-#head(data)
+# head(data)
+# ncol(data)
+
+# data <- sapply(data[18:203], function(x) as.numeric(as.character(x)))
 
 dataFinal <- data %>%
   
@@ -71,6 +76,66 @@ head(dataFinal)
 ```
 
 ```{r}
+# Random Forest
+
+library(rpart)
+library(partykit)
+library(randomForest)
+library(pROC)
+# ?randomForest
+
+##############
+# split 80/20 --------------------------
+set.seed(123)
+
+n <- nrow(dataFinal)
+train_id <- sample(1:n, size=round(n*0.8)) # select approx 80% of the row numbers between 1 and n
+train1 <- dataFinal[train_id,] # the data set we'll train the model on
+test1 <- dataFinal[-train_id,] # the data set we'll test the model on
+
+head(train1)
+head(test1)
+
+# Setting formula for random forest
+f <- as.formula(cutMade ~ birdiesPerRound + GIRsPerRound + overParHolesPerRound + ThreePuttsPerRound + over300DrivesPerRound + distPuttsMadePerRound + proxToHoleApproach)
+
+# Training forest
+mod_forest <- randomForest(f, data = train1, ntree = 128, mtry = 2)
+mod_forest
+
+sum(diag(mod_forest$confusion)) / nrow(train1)
+
+# Get importance, code from textbook
+library(tibble)
+importance(mod_forest) %>%
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  arrange(desc(MeanDecreaseGini))
+ 
+# https://www.r-bloggers.com/how-to-implement-random-forests-in-r/ 
+predTest <- predict(mod_forest, test1, type = "class")
+
+mean(predTest == test1$cutMade)
+table(predTest,test1$cutMade)
+
+# predict on test and evaluate the model on test using auc-----------------------
+# head(predTest)
+# ?predict
+pred_AUC <- predict(mod_forest, test1, type = "prob")[,1]
+
+test1 <- test1 %>% mutate(prediction = pred_AUC)
+
+roc_obj <- roc(test1$cutMade, test1$prediction)
+auc(roc_obj)
+plot(roc_obj)
+#summary(roc_obj)
+```
+
+Below this is all old code.
+
+```{r}
+# Neural Network 1
+
 library(rpart)
 library(partykit)
 
@@ -129,193 +194,4 @@ roc_obj <- roc(test$cutMade, test$prediction)
 auc(roc_obj)
 plot(roc_obj)
 #summary(roc_obj)
-```
-
-```{r}
-# predict on test and evaluate the model on test using auc-----------------------
-library(pROC)
-pred <- predict(neuralNetwork, test)[,2] # a vector of probabilities
-test <- test %>% mutate(prediction = pred)
-
-roc_obj <- roc(test$Survived, test$prediction)
-auc(roc_obj)
-plot(roc_obj)
-
-# question: would we get the same AUC with a different seed? NO. Because we would have a different train set.
-# question: can we calculate a confusion matrix right now?
-
-####################
-# end tree example
-#####################
-
-######################
-# begin investigating other classifiers
-######################
-
-# train a random forest classifier using the same train data as above.
-library(randomForest)
-?randomForest
-
-
-# train a naive bayes classifier using the same train data as above.
-library(e1071)
-?naiveBayes
-
-
-
-
-
-
-#####################
-# But what is AUC...?
-#####################
-# Once you have some predictions on your test set,
-# you need to evaluate the quality of the predictions.
-# The area under the ROC curve (AUC) is a common evaluation metric for classifiers.
-
-# Let's first start by looking at a simple metric: accuracy. We'll see it's often not ideal to evaluate a classifier.
-# In order to calculate accuracy, true positive rate, true negative rate, etc.,
-# we need to pick a threshold.
-# Above the threshold we'll predict 1, below we'll predict 0
-
-# threshold = 0.5 ---------------------------------------------------------------------
-head(test) %>% select(Survived, prediction)
-threshold <- .5
-
-test <- test %>% mutate(prediction.5 = ifelse(prediction > threshold , 1, 0))
-head(test) %>% select(Survived, prediction, prediction.5)
-
-# look at the confusion matrix
-mosaic::tally(prediction.5 ~ Survived, data=test) # doesn't look great
-TPR.5 <- 42/(42+15) # True Negative Rate aka Sensitivity
-TNR.5 <- 94/(94+9) # True Positive Rate aka Specificity
-
-
-# but if we chose a different threshold, the prediction would change and so would the FPR, TPR
-# threshold = 0.8 --------------------------------------------------------------------
-threshold <- 0.8
-
-test <- test %>% mutate(prediction.8 = ifelse(prediction > threshold , 1, 0))
-head(test) %>% select(Survived, prediction, prediction.8)
-
-# look at the confusion matrix
-mosaic::tally(prediction.8 ~ Survived, data=test) # doesn't look great
-TPR.8 <- 33/(33+24) # True Positive Rate aka Sensitivity
-TNR.8 <- 101/(101+2) # True Negative Rate aka Specificity
-
-
-# AUC = .833 ---------------------------------------------------------
-# AUC is the area under the reciever operating curve.
-# The ROC calculates TPR, FPR for all potential thresholds.
-# Each point represents the RPF, FPR of a single threshold.
-# AUC measures the quality of predictions without considering a thershold.
-roc_obj <- roc(test$Survived, test$prediction)
-plot(roc_obj)
-auc(roc_obj)
-summary(roc_obj)
-
-# let's add the TPR and TNR corresponding to threshold of .5 and .8.
-sensitivities <- c(TPR.5, TPR.8)
-specificities <- c(TNR.5, TNR.8)
-points(specificities, sensitivities, col = 'red', cex = 2)
-
-######################
-# end AUC
-#####################
-
-######################
-# begin random forest investigation
-######################
-# repeat the tree example with a random forest classifier.
-
-
-#####################
-# end random forest investigation
-#####################
-
-######################
-# begin naive bayes investigation
-######################
-# repeat the tree example with a naive bayes classifier.
-
-
-#####################
-# end naive bayes investigation
-#####################
-
-######################
-# Begin best classifier investigation
-# You will submit your best prediction
-######################
-
-# split 80/20 --------------------------
-set.seed(25)
-n <- nrow(titanic)
-train_id <- sample(1:n, size=round(n*0.8)) # select approx 80% of the row numbers between 1 and n
-train <- titanic[train_id,] # the data set we'll train the model on
-test <- titanic[-train_id,] # the data set we'll test the model on
-View(titanic)
-
-# train your model ---------------------
-tree <- rpart(Survived ~ Fare + Sex, data=train)
-plot(as.party(tree))
-tree
-
-nn <- nnet(Survived ~ Fare + Sex, data=train, size=3)
-plot((nn))
-
-nn
-# predict on test and evaluate the model on test using auc-----------------------
-pred_me <- predict(nn, test, type = "raw")[,1] # a vector of probabilities
-test_me <- test %>% mutate(prediction = pred)
-
-roc_obj_me <- roc(test_me$Survived, test_me$prediction)
-auc(roc_obj_me)
-plot(roc_obj_me)
-
-
-# predict on a TRUE hold out set ------------------------
-# To complete this investigation slack the following to Alex
-# 1. your test set AUC
-# 2. the csv of predictions from the hold out (described below)
-
-last_names <- 'lonnquist_cho' #change this
-
-# predict on this new hold out
-hold_out <- read.csv('https://abaldenko.github.io/STAT231-Fall2018/notes/data/titanic_hold_out_class.csv')
-prediction <- predict(nn, hold_out)
-
-# result should be a single column dataframe with column name prediction
-result <- data.frame(prediction)
-prediction
-# prediction
-# .0028
-# .0111
-# .9222
-# .0888
-
-# write the result to disk
-file_name <- paste0(last_names, '_prediction.csv', row.names=F)
-write.csv(result, file_name)
-
-#####################
-# End best classifier investigation
-#####################
-
-
-
-################
-# what does cp control in the tree classifier?
-################
-# the complexity parameter is a threshole
-# that controls whether or not a split is made.
-# a small cp is a small threshold, which means
-# there will be lots of splits.
-tree <- rpart(Survived ~ Fare, data=titanic)
-pruned_tree <- prune(tree, cp=.05)
-plot(as.party(pruned_tree))
-
-tree <- rpart(Survived ~ Fare, data=titanic)
-pruned_tree <- prune(tree, cp=.0005)
-plot(as.party(pruned_tree))
 ```
