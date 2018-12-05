@@ -95,7 +95,9 @@ test1 <- dataFinal[-train_id,] # the data set we'll test the model on
 
 head(train1)
 head(test1)
+```
 
+```{r}
 # Setting formula for random forest
 f <- as.formula(cutMade ~ birdiesPerRound + GIRsPerRound + overParHolesPerRound + ThreePuttsPerRound + over300DrivesPerRound + distPuttsMadePerRound + proxToHoleApproach)
 
@@ -126,6 +128,42 @@ pred_AUC <- predict(mod_forest, test1, type = "prob")[,1]
 test1 <- test1 %>% mutate(prediction = pred_AUC)
 
 roc_obj <- roc(test1$cutMade, test1$prediction)
+auc(roc_obj)
+plot(roc_obj)
+#summary(roc_obj)
+```
+
+```{r}
+# Setting formula for random forest 2
+f2 <- as.formula(cutMade ~ GIRsPerRound + ThreePuttsPerRound + over300DrivesPerRound + distPuttsMadePerRound + proxToHoleApproach)
+
+# Training forest 2
+mod_forest2 <- randomForest(f2, data = train1, ntree = 128, mtry = 2)
+mod_forest2
+
+sum(diag(mod_forest2$confusion)) / nrow(train1)
+
+# Get importance, code from textbook
+library(tibble)
+importance(mod_forest2) %>%
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  arrange(desc(MeanDecreaseGini))
+ 
+# https://www.r-bloggers.com/how-to-implement-random-forests-in-r/ 
+predTest2 <- predict(mod_forest2, test1, type = "class")
+
+mean(predTest2 == test1$cutMade)
+table(predTest2, test1$cutMade)
+
+# predict on test and evaluate the model on test using auc-----------------------
+# head(predTest2)
+# ?predict
+pred_AUC2 <- predict(mod_forest2, test1, type = "prob")[,1]
+
+test1 <- test1 %>% mutate(prediction2 = pred_AUC2)
+
+roc_obj <- roc(test1$cutMade, test1$prediction2)
 auc(roc_obj)
 plot(roc_obj)
 #summary(roc_obj)
