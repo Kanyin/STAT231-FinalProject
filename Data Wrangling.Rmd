@@ -151,7 +151,7 @@ importance(mod_forest2) %>%
   arrange(desc(MeanDecreaseGini))
  
 # https://www.r-bloggers.com/how-to-implement-random-forests-in-r/ 
-predTest2 <- predict(mod_forest2, test1, type = "class")
+predTest2 <- predict(mod_forest2, test1, type = "cls")
 
 mean(predTest2 == test1$cutMade)
 table(predTest2, test1$cutMade)
@@ -167,7 +167,23 @@ roc_obj <- roc(test1$cutMade, test1$prediction2)
 auc(roc_obj)
 plot(roc_obj)
 #summary(roc_obj)
+
+# Variable Importance Plot
+varImpPlot(mod_forest2, main = "Variable Importance")
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Below this is all old code.
 
