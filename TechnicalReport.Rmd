@@ -64,8 +64,7 @@ dataFinal <- data %>%
 dataFinal <- dataFinal[complete.cases(dataFinal), ]
 
 head(dataFinal)
-View(dataFinal)
-nrow(dataFinal)
+# nrow(dataFinal)
 ```
 
 ```{r}
