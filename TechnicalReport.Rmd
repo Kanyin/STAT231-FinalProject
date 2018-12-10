@@ -38,7 +38,8 @@ dataFinal <- data %>%
          #Creating our desired variables
          cutMade = as.factor(ifelse(`Finish Position(numeric)` < 999, 1, 0)),
          birdiesPerRound = `Birdies` / `Total Rounds`,
-         GIRsPerRound = `Total Greens in Regulation` / `Total Holes Played`,
+         GIRsPerRound = `Total Greens in Regulation` / `Total Rounds`,
+         # GIRsPerRound = `Total Greens in Regulation` / `Total Holes Played`,
          overParHolesPerRound = `Total Holes Over Par` / `Total Rounds`,
          ThreePuttsPerRound = `3-Putt Avoid(Total 3 Putts)` / `Total Rounds`,
          over300DrivesPerRound = `Drives Over 300 Yards (# of Drives)` /
@@ -63,7 +64,21 @@ dataFinal <- data %>%
 dataFinal <- dataFinal[complete.cases(dataFinal), ]
 
 head(dataFinal)
+View(dataFinal)
 nrow(dataFinal)
+```
+
+```{r}
+# Exploratory Data Analyis
+library(ggplot2)
+
+ggplot(dataFinal, aes(x=cutMade, y=GIRsPerRound)) + 
+  geom_boxplot() +
+  ggtitle("Greens in Regulation Per Round For Cut/Non-Cut Players")
+
+ggplot(dataFinal, aes(x=cutMade, y=proxToHoleApproach)) + 
+  geom_boxplot() +
+  ggtitle("Approach Shot Proximity Per Round For Cut/Non-Cut Players")
 ```
 
 ```{r warning=FALSE, message=FALSE}
