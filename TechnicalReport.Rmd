@@ -44,7 +44,6 @@ library(tibble)
 203 Variables in original dataset, all aspect of play in event.
 6173 Rows, each row represents a player
 
-Our 
 We transformed the raw statistics present in the dataset we received access to from the PGA TOUR, typically from a total occurence count into a per-round average occurence count. 
 
 Data was acquired upon request at PGAtourhq.com as an .scsv.  Variables, 'Total Rounds', 'Finish Position', 'Birdies', 'Total Holes Over Par', '3-Putt Avoid (Total Three Rounds)','Total Holes Played', 'Total Greens in Regulation', 'App. 50-125 Yards(ft)', 'App. 50-125ft Attempts'.  Final Variables that we used were:
@@ -173,3 +172,5 @@ Diagnostics: a full diagnostic analysis of your model, with interpretation of Fi
 
 Conclusion: a summary of your findings and a discussion of their limitations. First, remind the reader of the question that you originally set out to answer, and summarize your findings. Second, discuss the limitations of your model, and what could be done to improve it. You might also want to do the same for your data. This is your last opportunity to clarify the scope of your findings before a journalist misinterprets them and makes wild extrapolations! Protect yourself by being clear about what is not implied by your research.
 Clear Repo
+
+In this study, we hoped to determine the most important attributes needed to be successful as a professional golfer. Success was defined as making the cut which allowed players to make money. 
