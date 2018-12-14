@@ -1,21 +1,60 @@
 ---
 title: "Technical Report"
 author: "Kanyin Olagbegi and Will Lonnquist"
-date: "12/8/2018"
+date: "12/13/2018"
 output:
   pdf_document: default
   html_document: default
 ---
+**Project Title:**
+
+Factors Contributing to Success on the PGA TOUR
+
+**Abstract:**
+
+Our project analyzed player-based event statistics from all players who competed in 2018 PGA TOUR stroke play events to uncover characteristics which lead to event success. We have defined event success as making the cut in an event since players who make the cut and complete the event receive payment for their performance while players who miss the cut receive no payment. Using the random forest method to establish statistics that are associated with making, or missing, the cut, we discovered that players who maximize their number of greens-in-regulation per round and their distance of putts made per round while minimizing their number of three-putts per round are more likely to have success in the event than players not excelling in these categories. These were the variables from our model of all predictors that had the highest *variable importance* in the random forest. From these findings, we believe PGA Tour players should focus on improving their ball-striking and putting in order to maximize their greens-in-regulation and distance of putts made, respectively, in every event they compete in, thus increasing their likelihood of making the cut and earning money.  
+
+**Project Introduction:**
+
+Introduction: an overview of your project. In a few paragraphs, you should explain clearly and precisely what your research question is, why it is interesting, and what contribution you have made towards answering that question. You should give an overview of the specifics of your model, but not the full details. Most readers never make it past the introduction, so this is your chance to hook the reader, and is in many ways the most important part of the paper!
+
+Our group approached this project with an interest in uncovering what leads professional golfers to success. Our goal for the investigation carried out below was to use raw player-based event statistics from all PGA TOUR to determine what characteristics in a player's statistics contributed to their success. We defined success for a golfer in a PGA TOUR stroke play event as making the cut since players who make the cut and complete the event receive payment for their performance while players who miss the cut receive no payment. Our research into this topic may be important for PGA TOUR players as they can understand what statistics they should focus on maximizing (or minimizing) during their rounds so they can improve their chances of making the cut and making money. Our research may also be valuable to fans of the PGA TOUR so they can understand why certain players are making more cuts than others. 
+
+We used a random forest classifier method to establish a model that took in 5 different predictors:
+In using a random forest, their is a quantitative value known as variable importance attached to each predictor variable. The higher the variable importance value for a predictor variable, the more influential that variable is to determining the outcome of the model, in our case whether a player made or missed the cut. 
+
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r warning=FALSE, message=FALSE}
+# Loading all packages required for analysis
 library(readr)
 library(dplyr)
+library(ggplot2)
+library(randomForest)
+library(pROC)
+library(tibble)
+```
 
+**Data:**
+203 Variables in original dataset, all aspect of play in event.
+6173 Rows, each row represents a player
+
+Our 
+We transformed the raw statistics present in the dataset we received access to from the PGA TOUR, typically from a total occurence count into a per-round average occurence count. 
+
+Data was acquired upon request at PGAtourhq.com as an .scsv.  Variables, 'Total Rounds', 'Finish Position', 'Birdies', 'Total Holes Over Par', '3-Putt Avoid (Total Three Rounds)','Total Holes Played', 'Total Greens in Regulation', 'App. 50-125 Yards(ft)', 'App. 50-125ft Attempts'.  Final Variables that we used were:
+Greens in Regulation Per Round, Three Putts Per Round, Over 300 Feet Drives Per Round, Distance of Putts Per Round, Proximity to Hole on Approach Shot.  
+
+```{r}
+# Reading in dataset accessed from pgatourhq.com
 data <- read_delim('revent.TXT', delim = ";")
+ncol(data)
+nrow(data)
 
 dataFinal <- data %>%
   
@@ -25,8 +64,6 @@ dataFinal <- data %>%
   # Changing variables to the proper types
   mutate(`Total Rounds` = as.numeric(`Total Rounds)`),
          `Finish Position(numeric)` = as.numeric(`Finish Position(numeric)`),
-         `Birdies` = as.numeric(`Birdies`),
-         `Total Holes Over Par` = as.numeric(`Total Holes Over Par`),
          `Drives Over 300 Yards (# of Drives)` = as.numeric(`Drives Over 300 Yards (# of Drives)`),
          `3-Putt Avoid(Total 3 Putts)` = as.numeric(`3-Putt Avoid(Total 3 Putts)`),
          `Avg Distance of Putts Made(Total Distance of Putts)` = as.numeric(`Avg Distance of Putts Made(Total Distance of Putts)`),
@@ -37,10 +74,7 @@ dataFinal <- data %>%
          
          #Creating our desired variables
          cutMade = as.factor(ifelse(`Finish Position(numeric)` < 999, 1, 0)),
-         birdiesPerRound = `Birdies` / `Total Rounds`,
          GIRsPerRound = `Total Greens in Regulation` / `Total Rounds`,
-         # GIRsPerRound = `Total Greens in Regulation` / `Total Holes Played`,
-         overParHolesPerRound = `Total Holes Over Par` / `Total Rounds`,
          ThreePuttsPerRound = `3-Putt Avoid(Total 3 Putts)` / `Total Rounds`,
          over300DrivesPerRound = `Drives Over 300 Yards (# of Drives)` /
            `Total Rounds`,
@@ -69,7 +103,6 @@ head(dataFinal)
 
 ```{r}
 # Exploratory Data Analyis
-library(ggplot2)
 
 ggplot(dataFinal, aes(x=cutMade, y=GIRsPerRound)) + 
   geom_boxplot() +
@@ -93,8 +126,7 @@ test1 <- dataFinal[-train_id,] # the data set we'll test the model on
 
 ```{r warning=FALSE, message=FALSE}
 # Building Random Forest
-library(randomForest)
-library(pROC)
+
 
 # Setting formula for random forest
 f2 <- as.formula(cutMade ~ GIRsPerRound + ThreePuttsPerRound + over300DrivesPerRound + distPuttsMadePerRound + proxToHoleApproach)
@@ -120,7 +152,6 @@ plot(roc_obj)
 # Variable Importance
 
 # Get variable importance, code from textbook
-library(tibble)
 importance(mod_forest2) %>%
   as.data.frame() %>%
   rownames_to_column() %>%
@@ -129,3 +160,16 @@ importance(mod_forest2) %>%
 # Create Variable Importance Plot
 varImpPlot(mod_forest2, main = "Variable Importance")
 ```
+
+**Results:**
+
+Results: an explanation of what your model tells me about the research question. You should interpret coefficients in context and explain their relevance. What does your model tell me that I didn’t already know before? You may want to include negative results, but be careful about how you interpret them. For example, you may want to say something along the lines of: “we found no evidence that explanatory variable x is associated with response variable y”, or “explanatory variable x did not provide any additional explanatory power above what was already conveyed by explanatory variable z.” On other hand, you probably shouldn’t claim: “there is no relationship between x and y.”
+
+**Diagnostics:**
+
+Diagnostics: a full diagnostic analysis of your model, with interpretation of Figures that you provide.
+
+**Conclusions:**
+
+Conclusion: a summary of your findings and a discussion of their limitations. First, remind the reader of the question that you originally set out to answer, and summarize your findings. Second, discuss the limitations of your model, and what could be done to improve it. You might also want to do the same for your data. This is your last opportunity to clarify the scope of your findings before a journalist misinterprets them and makes wild extrapolations! Protect yourself by being clear about what is not implied by your research.
+Clear Repo

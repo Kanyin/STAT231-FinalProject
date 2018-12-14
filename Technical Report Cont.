@@ -1,6 +1,6 @@
 It is impossible to separate the idea of wealth from talent and skill. For every athlete, fame and wealth are based on one's individual athletic abilities. Regardless of what they are, their positive athletic stats must outweigh their negative ones. This is no different in the intellectual game of golf. The players with the best skill sets usually advance through several events in the tournament, and are handsomely rewarded with prize money.
+
 As a result, we decided to investigate the statistics that yield success for the best of golf athletes in a professional tournament, such as the Professional Golf Association (PGA) Tour 2018. We hoped to predict the importance different relevant variables and how they impact a golfer's success, or ability to make money, during the tournament. Therefore, we decided to use random forest, an unbiased classifier that works well with big data sets.
 In ranking different statistics, we also wanted to determine the relationship between that helps to yield golfer winnings, or success.
 DATA:
-Data was acquired upon request at PGAtourhq.com as an .scsv.  Variables, 'Total Rounds', 'Finish Position', 'Birdies', 'Total Holes Over Par', '3-Putt Avoid (Total Three Rounds)','Total Holes Played', 'Total Greens in Regulation', 'App. 50-125 Yards(ft)', 'App. 50-125ft Attempts'.  Final Variables that we used were:
-Greens in Regulation Per Round, Three Putts Per Round, Over 300 Feet Drives Per Round, Distance of Putts Per Round, Proximity to Hole on Approach Shot.   
+ 
