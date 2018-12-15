@@ -1,7 +1,7 @@
 ---
 title: "Technical Report"
 author: "Kanyin Olagbegi and Will Lonnquist"
-date: "12/13/2018"
+date: "12/14/2018"
 output:
   pdf_document: default
   html_document: default
@@ -12,19 +12,15 @@ Factors Contributing to Success on the PGA TOUR
 
 **Abstract:**
 
-Our project analyzed player-based event statistics from all players who competed in 2018 PGA TOUR stroke play events to uncover characteristics which lead to event success. We have defined event success as making the cut in an event since players who make the cut and complete the event receive payment for their performance while players who miss the cut receive no payment. Using the random forest method to establish statistics that are associated with making, or missing, the cut, we discovered that players who maximize their number of greens-in-regulation per round and their distance of putts made per round while minimizing their number of three-putts per round are more likely to have success in the event than players not excelling in these categories. These were the variables from our model of all predictors that had the highest *variable importance* in the random forest. From these findings, we believe PGA Tour players should focus on improving their ball-striking and putting in order to maximize their greens-in-regulation and distance of putts made, respectively, in every event they compete in, thus increasing their likelihood of making the cut and earning money.  
+Our project analyzed player-based event statistics from all players who competed in 2018 PGA TOUR stroke play events to uncover characteristics which led to event success. We have defined event success as making the cut in an event since players who make the cut and complete the event receive payment for their performance while players who miss the cut receive no payment. Using a random forest method to establish statistics that are associated with making, or missing, the cut, we discovered that players who maximize their number of greens-in-regulation per round and their distance of putts made per round while minimizing their number of three-putts per round are more likely to have success in the event than players not excelling in these categories. These were the variables from our model of all predictors that had the highest *variable importance* in the random forest. From these findings, we believe PGA Tour players should focus on improving their ball-striking and putting in order to maximize their greens-in-regulation and distance of putts made, respectively, in every event they compete in, thus increasing their likelihood of making the cut and earning money.  
 
 **Project Introduction:**
 
-Introduction: an overview of your project. In a few paragraphs, you should explain clearly and precisely what your research question is, why it is interesting, and what contribution you have made towards answering that question. You should give an overview of the specifics of your model, but not the full details. Most readers never make it past the introduction, so this is your chance to hook the reader, and is in many ways the most important part of the paper!
+Our group approached this project with an interest in uncovering what leads professional golfers to success. Our goal for the investigation carried out below was to use raw player-based event statistics from all 2018 PGA TOUR stroke play events to determine what characteristics in a player's statistics contributed to their success. We defined success for a golfer in a PGA TOUR stroke play event as making the cut since players who make the cut and complete the event receive payment for their performance while players who miss the cut receive no payment. Our research into this topic may be important for PGA TOUR players as they can understand what statistics they should focus on maximizing (or minimizing) during their rounds so they can improve their chances of making the cut and making money. Our research may also be valuable to fans of the PGA TOUR so they can understand why certain players are making more cuts than others. 
 
-Our group approached this project with an interest in uncovering what leads professional golfers to success. Our goal for the investigation carried out below was to use raw player-based event statistics from all PGA TOUR to determine what characteristics in a player's statistics contributed to their success. We defined success for a golfer in a PGA TOUR stroke play event as making the cut since players who make the cut and complete the event receive payment for their performance while players who miss the cut receive no payment. Our research into this topic may be important for PGA TOUR players as they can understand what statistics they should focus on maximizing (or minimizing) during their rounds so they can improve their chances of making the cut and making money. Our research may also be valuable to fans of the PGA TOUR so they can understand why certain players are making more cuts than others. 
+We created a model, specifically a random forest model, that predicts the outcome for a player making or missing the cut in a probabilistic manner. We chose to use a random forest for two reasons. First, random forests generated a metric known as variable importance which associated a value with each predictor variable telling of that variable predictive influence on the response variable. This was useful for our investigation to see which statistics influenced whether or not a cut was made or not. Second, using the classification method was beyond on the scope of the course and forced us to explore topics not covered in class as was a requirement for the project. Random forests are a collection of decision trees, which take in variables in the dataset and create cutoff levels for those variables in order to make a prediction about the response variable. In our case the response variable was whether or not a cut was made (binary) and our five predictors variables were average number of greens in regulation per round (quantitative), average number of three-putts per round (quantitative), average distance of putts made per round (quantitative), average number of drivers over 300 yards per round (quantitative), and average distance to the hole on approach shots from 50-125 yards (quantitative). 
 
-We used a random forest classifier method to establish a model that took in 5 different predictors:
-In using a random forest, their is a quantitative value known as variable importance attached to each predictor variable. The higher the variable importance value for a predictor variable, the more influential that variable is to determining the outcome of the model, in our case whether a player made or missed the cut. 
-
-
-
+After fitting our model we examined the differences in variable importance of our predictor variables. The differences in variable importance between our five predictor variables showed some trends that we believe may be meaningful to the desired audiences of our project, PGA TOUR players and fans. The specifics of our discovery are outlined below.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -41,19 +37,33 @@ library(tibble)
 ```
 
 **Data:**
-203 Variables in original dataset, all aspect of play in event.
-6173 Rows, each row represents a player
 
-We transformed the raw statistics present in the dataset we received access to from the PGA TOUR, typically from a total occurence count into a per-round average occurence count. 
+We gained access to the PGA TOUR's Shotlink Intelligence Program which contains data about PGA TOUR players, courses, and events. We exported the 2018 Event Detail file which contains player-based event statistics for all PGA TOUR sponsored events of the 2018 wrap-around season (some events played at the end of 2017 were included as they count towards the 2018 season). The dataset was downloaded as a semicolon-separated text file and uploaded into R as a dataframe. This dataset had 6173 observations of 203 variables covering all aspects of a golfer's play in an event. An observation in this dataset represented a specific player's statistics from an event. For example, statistics about Tiger Woods' performance at the 2018 Tour Championship could be found in one row of the dataset.
 
-Data was acquired upon request at PGAtourhq.com as an .scsv.  Variables, 'Total Rounds', 'Finish Position', 'Birdies', 'Total Holes Over Par', '3-Putt Avoid (Total Three Rounds)','Total Holes Played', 'Total Greens in Regulation', 'App. 50-125 Yards(ft)', 'App. 50-125ft Attempts'.  Final Variables that we used were:
-Greens in Regulation Per Round, Three Putts Per Round, Over 300 Feet Drives Per Round, Distance of Putts Per Round, Proximity to Hole on Approach Shot.  
+We modified this large dataset to make it more suitable for our needs. First, we filtered out events that were official PGA TOUR events such as the Ryder Cup, an international match play event, that the PGA TOUR still sponsors. We then modified the types of the variables we needed for analysis. When we uploaded the original dataset into R all variables were designated as characters, even though many of them were meant to be numerics. Then, we transformed the raw statistics present in the dataset we received access to from the PGA TOUR, typically from a total occurence count into a per-round average occurence count. For example, we took the total number of three-putts a player had in an event and divided that count by the total number of rounds played in that event by that player. This allowed us to account for increases to certain counts that may occur from players competing in more rounds than others. For example, players who make the cut will likely have higher average counts of number of drives over 300 yards since they will play 36 more holes of golf in that event than players who miss the cut, but they might not necessarily have more 300-yard drivers per round played. Next, we selected our newly transformed variable columns. Finally, we took out observations from a data that had missing values since we read online that random forests work better without any missing values. After wrangling the original dataset, we were left with a dataset of 4786 observations and 8 variables.
 
-```{r}
+Codebook for our variables:
+
+Response variable: 
+cutMade - a binary variable with value 0 for a player who missed the cut and 1 for players who made the cut. Players strive to make the cut. 
+
+Predictor variables:
+1. GIRsPerRound - A quantitative variable detailing the average number of greens in regulation hit by a player per round in an event. A green in regulation occurs when a player's golf ball in on the green in two strokes less than the par for the hole. If a player's ball was on the green on a par 4 in 2 strokes they would have hit that green in regulation. Players strive to hit the green in regulation on every hole they play.   
+2. ThreePuttsPerRound - A quantitative variable detailing the average number of three-putts by a player per round in an event. A three-putt occurs when a player takes three strokes on the green to get their ball into the hole. Players strive to avoid three-putts.  
+3. over300DrivesPerRound - A quantitative variable detailing the average number of drivers over 300-yards hit by a player per round in an event. Hitting the ball far on a shot means the next shot will begin from closer to the hole and will thus be easier. 300-yards is an accepted threshold for what classifies as a far or long drive. Players strive to hit their drives over 300-yards when possible.  
+4. distPuttsMadePerRound - a quantitative variable detailing the average total distance in feet of all putts holed by a player per round in an event. Making, or holing, a putt becomes exponentially harder as a player moves farther away from the hole so making long putts is an impressive task. Players strive to make every putt they have, but just making a few more long putts over the course of an event will add up.  
+5. proxToHoleApproach - a quantitative variable detailing the average distance in feet that a player's ball winds up from the hole on approach shots from 50-125 yards per round in a event. Hitting the ball closer to the hole will give the player a better chance of making their upcoming putt. Players strive to hit the ball as close as possible to the hole from this approach shot distance range.  
+
+Misc. variables:
+1. `Player Name` - The name of the PGA TOUR player to whom the accompanying variables belong.  
+2. `Event Name` - The name of the PGA TOUR event that the accompanying statistics were collected during.  
+
+```{r warning=FALSE, message=FALSE}
 # Reading in dataset accessed from pgatourhq.com
 data <- read_delim('revent.TXT', delim = ";")
-ncol(data)
+# Dimensions of original dataset
 nrow(data)
+ncol(data)
 
 dataFinal <- data %>%
   
@@ -84,9 +94,7 @@ dataFinal <- data %>%
   select(`Player Name`,
         `Event Name`,
         cutMade,
-        birdiesPerRound,
         GIRsPerRound,
-        overParHolesPerRound,
         ThreePuttsPerRound,
         over300DrivesPerRound,
         distPuttsMadePerRound,
@@ -96,8 +104,11 @@ dataFinal <- data %>%
 # Source for code: https://stackoverflow.com/questions/4862178/remove-rows-with-all-or-some-nas-missing-values-in-data-frame 
 dataFinal <- dataFinal[complete.cases(dataFinal), ]
 
+# First six rows of modified dataset
 head(dataFinal)
-# nrow(dataFinal)
+# Dimensions of modified dataset
+nrow(dataFinal)
+ncol(dataFinal)
 ```
 
 ```{r}
