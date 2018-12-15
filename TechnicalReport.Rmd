@@ -112,7 +112,7 @@ ncol(dataFinal)
 ```
 
 ```{r}
-# Exploratory Data Analyis
+# Exploratory Data Analyis, looking for relationships between predictor variables and cutMade
 
 ggplot(dataFinal, aes(x=cutMade, y=GIRsPerRound)) + 
   geom_boxplot() +
