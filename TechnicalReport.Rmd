@@ -36,6 +36,7 @@ library(ggplot2)
 library(randomForest)
 library(pROC)
 library(tibble)
+library(mosaic)
 ```
 
 **Data:**
@@ -117,10 +118,7 @@ ncol(dataFinal)
 # Exploratory Data Analysis
 
 # Total players who missed the cut and made the cut in the 2018 season
-count <- dataFinal %>%
-  group_by(cutMade) %>%
-  summarize(n = n())
-count
+tally(~ cutMade, data= dataFinal)
 
 # Looking for relationships between predictor variables and cutMade
 ggplot(dataFinal, aes(x=cutMade, y=GIRsPerRound)) + 
@@ -161,8 +159,6 @@ f2 <- as.formula(cutMade ~ GIRsPerRound + ThreePuttsPerRound + over300DrivesPerR
 set.seed(500)
 mod_forest2 <- randomForest(f2, data = train1, ntree = 300, mtry = 2)
 mod_forest2
-
-sum(diag(mod_forest2$confusion)) / nrow(train1)
 
 # predict on test and evaluate the model on test using auc-----------------------
 pred_AUC2 <- predict(mod_forest2, test1, type = "prob")[,1]
